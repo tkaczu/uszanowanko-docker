@@ -1,0 +1,59 @@
+version: '2'
+
+volumes:
+  app_data:
+
+services:
+  postgres_data:
+    container_name: up_postgres_data
+    image: busybox
+    volumes:
+      - /var/lib/postgresql/data
+
+  postgres:
+    container_name: up_postgres
+    restart: on-failure
+    image: postgres:9.4.4
+    volumes_from:
+      - postgres_data
+    ports:
+      - "5432:5432"
+    env_file:
+      - ../../env/development.env
+
+  redis:
+    container_name: up_redis
+    restart: on-failure
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  app:
+    container_name: up_app
+    build:
+      context: ../../.
+      dockerfile: ./devops/docker/Dockerfile
+    image: up_app
+    command: bash -c "rm -rf tmp/pids/server.pid && rails server -b '0.0.0.0'"
+    restart: on-failure
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../.:/up-app
+    links:
+      - postgres:postgres
+      - redis:redis
+    tty: true
+    stdin_open: true
+
+  elk:
+    container_name: up_elk
+    restart: on-failure
+    image: willdurand/elk:kibana-4.1.2
+    ports:
+      - "8080:80"
+    volumes:
+      - ./elk/logstash:/etc/logstash
+      - ./elk/logstash/patterns:/opt/logstash/patterns
+    volumes_from:
+      - app

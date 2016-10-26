@@ -1,0 +1,13 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: 5
+  timeout: 5000
+  host: postgres
+  port: 5432
+
+development:
+  <<: *default
+  database: up_docker_development
+  username: up_docker
+  password: up_docker
